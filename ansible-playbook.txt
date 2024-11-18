@@ -1,0 +1,54 @@
+- hosts: localhost
+  connection: local
+  vars:
+    resource_group: rg-projeto-wiki
+    location: West Europe
+    pg_server_name: pg-server-wiki
+    pg_db_name: db-wiki
+    pg_admin_user: wikiadmin
+    pg_admin_password: ComplexPassword123!
+    app_service_name: app-wiki
+    app_service_plan_name: plan-wiki
+
+  tasks:
+    - name: Create Resource Group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ location }}"
+
+    - name: Create PostgreSQL Server
+      azure_rm_postgresqlserver:
+        resource_group: "{{ resource_group }}"
+        name: "{{ pg_server_name }}"
+        sku: B_Gen5_2
+        storage_mb: 5120
+        admin_username: "{{ pg_admin_user }}"
+        admin_password: "{{ pg_admin_password }}"
+
+    - name: Create PostgreSQL Database
+      azure_rm_postgresqldatabase:
+        resource_group: "{{ resource_group }}"
+        server_name: "{{ pg_server_name }}"
+        name: "{{ pg_db_name }}"
+        charset: UTF8
+        collation: en_US.UTF8
+
+    - name: Create App Service Plan
+      azure_rm_appserviceplan:
+        resource_group: "{{ resource_group }}"
+        name: "{{ app_service_plan_name }}"
+        sku: S1
+        is_linux: yes
+
+    - name: Create App Service
+      azure_rm_webapp:
+        resource_group: "{{ resource_group }}"
+        name: "{{ app_service_name }}"
+        plan: "{{ app_service_plan_name }}"
+        appsettings:
+          WIKI_DB_TYPE: postgres
+          WIKI_DB_HOST: "{{ pg_server_name }}"
+          WIKI_DB_PORT: "5432"
+          WIKI_DB_NAME: "{{ pg_db_name }}"
+          WIKI_DB_USERNAME: "{{ pg_admin_user }}"
+          WIKI_DB_PASSWORD: "{{ pg_admin_password }}"
